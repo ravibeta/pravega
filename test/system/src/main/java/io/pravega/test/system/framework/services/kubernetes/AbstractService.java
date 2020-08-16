@@ -11,6 +11,7 @@ package io.pravega.test.system.framework.services.kubernetes;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.Resources;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1ContainerBuilder;
@@ -41,13 +42,18 @@ import io.kubernetes.client.openapi.models.V1beta1RoleBuilder;
 import io.kubernetes.client.openapi.models.V1beta1ClusterRoleBuilder;
 import io.kubernetes.client.openapi.models.V1beta1RoleRefBuilder;
 import io.kubernetes.client.openapi.models.V1beta1SubjectBuilder;
+import io.kubernetes.client.util.Yaml;
 import io.pravega.common.concurrent.Futures;
 import io.pravega.test.system.framework.Utils;
 import io.pravega.test.system.framework.kubernetes.ClientFactory;
 import io.pravega.test.system.framework.kubernetes.K8sClient;
 import io.pravega.test.system.framework.services.Service;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
+import java.nio.file.Files;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -116,7 +122,9 @@ public abstract class AbstractService implements Service {
     }
 
     CompletableFuture<Object> deployPravegaUsingOperator(final URI zkUri, int controllerCount, int segmentStoreCount, int bookieCount, ImmutableMap<String, String> props, boolean enableTls) {
-    return k8sClient.createCRD(getPravegaCRD())
+
+    return registerCertificateCRD()
+                        .thenCompose(v -> k8sClient.createCRD(getPravegaCRD()))
                         .thenCompose(v -> k8sClient.createRole(NAMESPACE, getPravegaOperatorRole()))
                         .thenCompose(v -> k8sClient.createClusterRole(getPravegaOperatorClusterRole()))
                         .thenCompose(v -> k8sClient.createRoleBinding(NAMESPACE, getPravegaOperatorRoleBinding()))
@@ -338,6 +346,86 @@ public abstract class AbstractService implements Service {
                                   .build())
                 .build();
 
+    }
+
+    private V1beta1CustomResourceDefinition getCertificateCRD() {
+
+        return new V1beta1CustomResourceDefinitionBuilder()
+                .withApiVersion("apiextensions.k8s.io/v1beta1")
+                .withKind("CustomResourceDefinition")
+                .withMetadata(new V1ObjectMetaBuilder().withName("certificates.cert-manager.io").build())
+                .withSpec(new V1beta1CustomResourceDefinitionSpecBuilder()
+                        .withGroup("cert-manager.io")
+                        .withNames(new V1beta1CustomResourceDefinitionNamesBuilder()
+                                .withKind("Certificate")
+                                .withListKind("CertificateList")
+                                .withPlural("Certificates")
+                                .withSingular("certificate")
+                                .build())
+                        .withScope("Namespaced")
+                        .withVersion("v1alpha2")
+                        .withNewSubresources()
+                        .withStatus(new V1beta1CustomResourceDefinitionStatus())
+                        .endSubresources()
+                        .build())
+                .build();
+    }
+
+    private static V1beta1CustomResourceDefinition getCertificateManagerResourceDefinition() {
+        String data = "";
+        String yamlInputPath = "https://github.com/jetstack/cert-manager/releases/download/v0.16.1/cert-manager.yaml";
+        try {
+            data = new String(Resources.toByteArray(new URL(yamlInputPath)));
+            // data = new String(Files.readAllBytes(java.nio.file.Paths.get(new File(yamlInputPath).toURI())));
+        } catch (IOException e) {
+            log.error("Could not connect to {}", yamlInputPath);
+            try {
+                data = new String(Files.readAllBytes(java.nio.file.Paths.get(new File("cert-manager.yaml").toURI())));
+            } catch (IOException ex) {
+                log.error("Could not read from path:", ex);
+            }
+        }
+        final V1beta1CustomResourceDefinition customResourceDefinition = Yaml.loadAs(data, V1beta1CustomResourceDefinition.class);
+        log.info("crd={}", customResourceDefinition);
+        return customResourceDefinition;
+    }
+
+    private CompletableFuture<Object> registerCertificateCRD() {
+        V1beta1CustomResourceDefinition crd = getCertificateManagerResourceDefinition();
+        return k8sClient.createCRD(crd)
+                .thenCompose(v -> deployTLSCertificates());
+
+    }
+
+    CompletableFuture<Object> deployTLSCertificates() {
+        return k8sClient.createCRD(getCertificateCRD())
+                .thenCompose(v -> k8sClient.createAndUpdateCustomObject("certificates.cert-manager.io", "v1alpha2",
+                        NAMESPACE, "Certificates",
+                        getCertificateDeployment()));
+    }
+
+    private Map<String, Object> getCertificateDeployment() {
+        return ImmutableMap.<String, Object>builder()
+                .put("apiVersion", "certificates.cert-manager.io/v1alpha2")
+                .put("kind", "Certificate")
+                .put("metadata", ImmutableMap.of("name", "selfsigned-cert", "namespace", NAMESPACE))
+                .put("spec", buildCertificateSpec())
+                .build();
+    }
+
+    protected Map<String, Object> buildCertificateSpec() {
+        ImmutableMap<String, Object> issuerRefSpec = ImmutableMap.<String, Object>builder()
+                .put("name", "test-selfsigned")
+                .build();
+        ImmutableMap<String, Object> commonEntries = ImmutableMap.<String, Object>builder()
+                .put("dnsNames", singletonList("example.com"))
+                .put("secretName", "selfsigned-cert-tls")
+                .put("issuerRef", issuerRefSpec)
+                .build();
+
+        return ImmutableMap.<String, Object>builder()
+                .putAll(commonEntries)
+                .build();
     }
 
     private V1beta1Role getPravegaOperatorRole() {
