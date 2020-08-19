@@ -368,6 +368,14 @@ public abstract class AbstractService implements Service {
             return CompletableFuture.completedFuture(null);
         }
         V1Secret secret = getTLSSecret();
+        try {
+            V1Secret existingSecret  = Futures.getThrowingException(k8sClient.getSecret(SELFSIGNED_CERT_TLS, NAMESPACE));
+            if (existingSecret != null) {
+                Futures.getThrowingException(k8sClient.deleteSecret(SELFSIGNED_CERT_TLS, NAMESPACE));
+            }
+        } catch (Exception e) {
+           log.error("Secret {} already exists, cannot delete", SELFSIGNED_CERT_TLS);
+        }
         return k8sClient.createSecret(NAMESPACE, secret);
     }
 
