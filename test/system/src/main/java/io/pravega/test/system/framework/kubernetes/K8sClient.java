@@ -620,7 +620,7 @@ public class K8sClient {
         CoreV1Api api = new CoreV1Api();
         K8AsyncCallback<V1Secret> callback = new K8AsyncCallback<>("createNamespacedSecret");
         api.createNamespacedSecretAsync(namespace, secret, PRETTY_PRINT, null, null, callback);
-        return callback.getFuture();
+        return exceptionallyExpecting(callback.getFuture(), isConflict, null);
     }
 
     /**

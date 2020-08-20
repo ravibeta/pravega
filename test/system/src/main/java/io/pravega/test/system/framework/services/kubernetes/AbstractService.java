@@ -131,7 +131,7 @@ public abstract class AbstractService implements Service {
                         .thenCompose(v -> k8sClient.createRoleBinding(NAMESPACE, getPravegaOperatorRoleBinding()))
                         .thenCompose(v -> k8sClient.createClusterRoleBinding(getPravegaOperatorClusterRoleBinding()))
                         //deploy pravega operator.
-                        .thenCompose(v -> k8sClient.createDeployment(NAMESPACE, getPravegaOperatorDeployment(enableTls)))
+                        .thenCompose(v -> k8sClient.createDeployment(NAMESPACE, getPravegaOperatorDeployment(enableTls || Utils.TLS_ENABLED)))
                         // wait until pravega operator is running, only one instance of operator is running.
                         .thenCompose(v -> k8sClient.waitUntilPodIsRunning(NAMESPACE, "name", PRAVEGA_OPERATOR, 1))
                         // request operator to deploy zookeeper nodes.
@@ -472,10 +472,10 @@ public abstract class AbstractService implements Service {
                                                                                      .withValue("true")
                                                                                      .build(),
                                                                 new V1EnvVarBuilder().withName("TLS_ENABLED")
-                                                                        .withValue(String.valueOf(enableTls))
+                                                                        .withValue(String.valueOf(enableTls || Utils.TLS_ENABLED))
                                                                         .build(),
                                                                 new V1EnvVarBuilder().withName("TLS_ENABLED_FOR_SEGMENT_STORE")
-                                                                        .withValue(String.valueOf(enableTls))
+                                                                        .withValue(String.valueOf(enableTls || Utils.TLS_ENABLED))
                                                                         .build())
                                                         .build();
         return new V1DeploymentBuilder().withMetadata(new V1ObjectMetaBuilder().withName(PRAVEGA_OPERATOR)
