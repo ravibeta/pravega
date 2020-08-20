@@ -223,7 +223,7 @@ public class Utils {
     }
 
     private static boolean isTLSEnabled() {
-        String transportEnabled = Utils.getConfig("transportEnabled", "false");
+        String transportEnabled = Utils.getConfig("transportEnabled", "true");
         return Boolean.valueOf(transportEnabled);
     }
 }
