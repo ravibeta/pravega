@@ -987,12 +987,15 @@ project('test:system') {
 
 def getProjectVersion() {
     String ver = pravegaVersion
+/*
     if (grgit && ver.contains("-SNAPSHOT")) {
         String versionLabel = ver.substring(0, ver.indexOf("-SNAPSHOT"))
         def count = grgit.log(includes:['HEAD']).size()
         def commitId = "${grgit.head().abbreviatedId}"
         ver = versionLabel + "-" + count + "." + commitId + "-SNAPSHOT"
     }
+*/
+    ver = "0.9.0-2641.ea37ccadc-with-bindings"
     return ver
 }
 
