@@ -74,9 +74,6 @@ spec:
       image: openjdk:8u181-jre-alpine
       command: ["/bin/sh"]
       args: ["-c", "sleep 60000"]
-      env:
-        - name: tlsEnabled
-          value: "${tlsEnabled:-false}"
       volumeMounts:
         - mountPath: "/data"
           name: task-pv-storage
@@ -111,9 +108,6 @@ spec:
       image: openjdk:8u181-jre-alpine
       command: ["/bin/sh"]
       args: ["-c", "sleep 60000"]
-      env:
-        - name: tlsEnabled
-          value: "${tlsEnabled:-false}"
       volumeMounts:
         - mountPath: "/data"
           name: task-pv-storage
