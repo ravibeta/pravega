@@ -59,6 +59,29 @@ if [ $tier2Type = "nfs" ]; then
 fi
 
 # Step 5: Create a dynamic PVC, if already created the error is ignored.
+cat <<EOF
+kind: Pod
+apiVersion: v1
+metadata:
+  name: task-pv-pod
+spec:
+  volumes:
+    - name: task-pv-storage
+      persistentVolumeClaim:
+       claimName: task-pv-claim
+  containers:
+    - name: task-pv-container
+      image: openjdk:8u181-jre-alpine
+      command: ["/bin/sh"]
+      args: ["-c", "sleep 60000"]
+      env:
+        - name: tlsEnabled
+          value: "${tlsEnabled:-false}"
+      volumeMounts:
+        - mountPath: "/data"
+          name: task-pv-storage
+EOF
+
 cat <<EOF | kubectl create -f - || true
 kind: PersistentVolumeClaim
 apiVersion: v1
@@ -88,6 +111,9 @@ spec:
       image: openjdk:8u181-jre-alpine
       command: ["/bin/sh"]
       args: ["-c", "sleep 60000"]
+      env:
+        - name: tlsEnabled
+          value: "${tlsEnabled:-false}"
       volumeMounts:
         - mountPath: "/data"
           name: task-pv-storage

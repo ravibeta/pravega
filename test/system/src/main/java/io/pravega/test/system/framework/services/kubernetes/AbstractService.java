@@ -71,7 +71,7 @@ public abstract class AbstractService implements Service {
     protected static final String TCP = "tcp://";
     protected static final String TLS = "tls://";
     static final int DEFAULT_CONTROLLER_COUNT = 1;
-    static final int DEFAULT_SEGMENTSTORE_COUNT = 1;
+    static final int DEFAULT_SEGMENTSTORE_COUNT = 5;
     static final int DEFAULT_BOOKIE_COUNT = 3;
     static final int MIN_READY_SECONDS = 10; // minimum duration the operator is up and running to be considered ready.
     static final int ZKPORT = 2181;
@@ -179,6 +179,7 @@ public abstract class AbstractService implements Service {
                 .put("image", pravegaImgSpec)
                 .put("tier2", tier2Spec())
                 .build();
+
         for (Map.Entry<String, String> entry : props.entrySet()) {
             log.info("Pravega cluster option name={}, value={}", entry.getKey(), entry.getValue());
         }

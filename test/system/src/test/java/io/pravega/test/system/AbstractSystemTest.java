@@ -29,6 +29,8 @@ import static io.pravega.test.system.framework.Utils.EXECUTOR_TYPE;
 abstract class AbstractSystemTest {
     final static String TCP = "tcp://";
     final static String TLS = "tls://";
+    final static String TLS_ENABLED_1 = System.getenv().getOrDefault("tlsEnabled", System.getProperty("tlsEnabled", "false"));
+
     static final Predicate<URI> ISGRPC = uri -> {
         switch (EXECUTOR_TYPE) {
             case REMOTE_SEQUENTIAL:
@@ -40,6 +42,7 @@ abstract class AbstractSystemTest {
         }
     };
     static URI startZookeeperInstance() {
+        log.info("tlsEnabled={}", TLS_ENABLED_1);
         Service zkService = Utils.createZookeeperService();
         if (!zkService.isRunning()) {
             zkService.start(true);

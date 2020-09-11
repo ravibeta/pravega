@@ -842,6 +842,7 @@ project('test:system') {
     }
 
     task copyTestsToK8sCluster(type: Exec) {
+        tasks.withType(Exec) { environment "tlsEnabled", System.getProperty("tlsEnabled", "false") }
         description 'Used to copy test artifacts to the Kubernetes Cluster.'
         dependsOn 'jar'
         commandLine './kubernetes/setupTestPod.sh'
@@ -890,7 +891,7 @@ project('test:system') {
         systemProperty "securityEnabled", System.getProperty("securityEnabled", "false")
         systemProperty "tlsEnabled", System.getProperty("tlsEnabled", "false")
         systemProperty "logLevel", System.getProperty("log.level", "DEBUG")
-       
+        System.out.println("tlsEnabled="+System.getProperty("tlsEnabled", "false")) 
         maxParallelForks = 1
     }
 
