@@ -118,7 +118,7 @@ allprojects {
             force "org.apache.curator:curator-framework:" + apacheCuratorVersion
             force "org.glassfish.jersey.core:jersey-common:" + jerseyVersion
             force "org.glassfish.jersey.core:jersey-server:" + jerseyVersion
-            force "com.fasterxml.jackson.core:jackson-databind:" + jacksonVersion 
+            force "com.fasterxml.jackson.core:jackson-databind:" + jacksonVersion
             force "org.slf4j:slf4j-api:" + slf4jApiVersion
             force "org.apache.zookeeper:zookeeper:" + apacheZookeeperVersion
             force "io.netty:netty-common:" + nettyVersion
@@ -159,7 +159,7 @@ project('common') {
 }
 
 def withoutLogger = { exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-                      exclude group: 'org.slf4j', module: 'slf4j-simple' }
+    exclude group: 'org.slf4j', module: 'slf4j-simple' }
 
 project('shared:authplugin') {
     dependencies {
@@ -471,9 +471,9 @@ project('test:integration') {
     }
 
     test {
-		jvmArgs = ["-server", "-Xmx2g", "-XX:+HeapDumpOnOutOfMemoryError",
-                                 "-Dlog.dir=PRAVEGA_APP_HOME/logs",
-                                 "-Dlog.name=selftest"]
+        jvmArgs = ["-server", "-Xmx2g", "-XX:+HeapDumpOnOutOfMemoryError",
+                   "-Dlog.dir=PRAVEGA_APP_HOME/logs",
+                   "-Dlog.name=selftest"]
     }
 
     dependencies {
@@ -584,7 +584,7 @@ project('shared:controller-api') {
         compile "io.grpc:grpc-protobuf:" + grpcVersion
         compile "io.grpc:grpc-stub:" + grpcVersion
         compile group: 'io.netty', name: 'netty-tcnative-boringssl-static', version: nettyBoringSSLVersion
-         // Since Java 10 javax.annotation is no more bundled with the JRE
+        // Since Java 10 javax.annotation is no more bundled with the JRE
         compileOnly group: 'javax.annotation', name: 'javax.annotation-api', version: javaxAnnotationVersion
     }
 
@@ -804,6 +804,7 @@ project('test:system') {
     //This is  used to invoke systemTests
     task startSystemTests(type: Test) {
 
+        tasks.withType(Exec) { environment "tlsEnabled", System.getProperty("tlsEnabled", "false") }
         ext.dockerRegistryUrl = project.hasProperty("dockerRegistryUrl") ? project.dockerRegistryUrl : ""
         ext.repoUrl = project.hasProperty("repoUrl") ? project.repoUrl : ""
 
@@ -836,6 +837,7 @@ project('test:system') {
         systemProperty "testVersion", pravegaVersion
         systemProperty "testArtifactUrl", "${repoUrl}/io/pravega/pravega-test-system/" +
                 pravegaVersion+"/pravega-test-system-"+ pravegaVersion + ".jar"
+        systemProperty "tlsEnabled", System.getProperty("tlsEnabled")
 
         onlyIf { dockerRegistryUrl && repoUrl }
     }
@@ -848,7 +850,17 @@ project('test:system') {
 
     task startK8SystemTests(type: Test) {
         tasks.withType(Exec) { environment "tier2Type", System.getProperty("tier2Type", "nfs") }
+        tasks.withType(Exec) { environment "pravegaOperatorVersion",System.getProperty("pravegaOperatorVersion", "latest") }
+        tasks.withType(Exec) { environment "bookkeeperOperatorVersion",System.getProperty("bookkeeperOperatorVersion", "latest") }
+        tasks.withType(Exec) { environment "zookeeperOperatorVersion",System.getProperty("zookeeperOperatorVersion", "latest") }
+        // The below properties are used to to specify the pravega published chart and repository to deploy pravega,bookkeeper & zookkeeper operators using helm docker image properties
+        tasks.withType(Exec) { environment "publishedChartName",System.getProperty("publishedChartName", "pravega") }
+        tasks.withType(Exec) { environment "helmRepository",System.getProperty("helmRepository", "pravega") }
+        // To update config map with desired pravega version
+        tasks.withType(Exec) { environment "desiredPravegaCMVersion",System.getProperty("desiredPravegaCMVersion", "0.9.0") }
+        tasks.withType(Exec) { environment "tlsEnabled", System.getProperty("tlsEnabled", "false") }
         dependsOn 'copyTestsToK8sCluster' // ensure test artifacts are copied to the cluster.
+        tasks.withType(Test) { environment "tlsEnabled", System.getProperty("tlsEnabled", "false") }
 
         description 'Used to invoke K8s based System Tests, example usage: gradle startK8SystemTests'
         testClassesDirs = sourceSets.test.output.classesDirs
@@ -856,8 +868,6 @@ project('test:system') {
 
         ext.repoUrl = project.hasProperty("repoUrl") ? project.repoUrl : ""
         systemProperty "execType", "KUBERNETES"
-        systemProperty "pravegaOperatorImage", System.getProperty("pravegaOperatorImage", "pravega/pravega-operator:latest")
-        systemProperty "zookeeperOperatorImage", System.getProperty("zookeeperOperatorImage", "pravega/zookeeper-operator:latest")
         // The below properties are used to to specify the pravega docker image properties
         // e.g: private-docker-repo/pravega-prefix/pravega:version
         if (System.getProperty("dockerRegistryUrl") != null) { // docker images are pulled from dockerhub if dockerRegistryUrl is not specified.
@@ -869,24 +879,29 @@ project('test:system') {
         systemProperty "zookeeperImageName", System.getProperty("zookeeperImageName", "zookeeper") // zookkeeper image name
         systemProperty "zookeeperImageVersion", System.getProperty("zookeeperImageVersion", "latest") // zookeeper image version
         systemProperty "imageVersion", System.getProperty("imageVersion") // pravega version.
-        // bookkeeper version defaults to pravega version.
-        systemProperty "pravegaBookkeeperVersion", System.getProperty("pravegaBookkeeperVersion", System.getProperty("imageVersion"))
-
+        // bookkeeper version can be different from pravega version.
+        systemProperty "bookkeeperImageVersion", System.getProperty("bookkeeperImageVersion", "latest") // // bookkeeper image version
         // tier2Type , default is NFS.
         systemProperty "tier2Type", System.getProperty("tier2Type", "nfs")
         // tier2 Configuration, specified as comma seperated key values k1=v1,k2=v2
         systemProperty "tier2Config", System.getProperty("tier2Config")
-
+        systemProperty "pravegaOperatorVersion",System.getProperty("pravegaOperatorVersion", "latest")
+        systemProperty "bookkeeperOperatorVersion",System.getProperty("bookkeeperOperatorVersion", "latest")
+        systemProperty "zookeeperOperatorVersion",System.getProperty("zookeeperOperatorVersion", "latest")
+        systemProperty "desiredPravegaCMVersion",System.getProperty("desiredPravegaCMVersion", "0.9.0")
+        systemProperty "publishedChartName",System.getProperty("publishedChartName", "pravega")
+        systemProperty "helmRepository",System.getProperty("helmRepository", "pravega")
         //testPodImage , default is openjdk:8u181-jre-alpine
         systemProperty "testPodImage", System.getProperty("testPodImage", "openjdk:8u181-jre-alpine")
+        systemProperty "tlsEnabled", System.getProperty("tlsEnabled")
 
         if (System.getProperty("imageVersion") == null) {
             systemProperty "imageVersion", "INVALID_IMAGE_VERSION"
         }
-        
+
         systemProperty "securityEnabled", System.getProperty("securityEnabled", "false")
         systemProperty "logLevel", System.getProperty("log.level", "DEBUG")
-       
+
         maxParallelForks = 1
     }
 
@@ -925,7 +940,7 @@ project('test:system') {
 
     //This is  used to invoke docker based systemTests
     task startSystemTestsWithDocker(type: Test) {
-
+        tasks.withType(Exec) { environment "tlsEnabled", System.getProperty("tlsEnabled", "false") }
         dependsOn 'testJarForDocker', 'execShellScript'
 
         if (System.getProperty("awsExec").equals("true")) {
@@ -934,7 +949,7 @@ project('test:system') {
         }
 
         doFirst {
-                systemProperty "awsMasterIP", variable
+            systemProperty "awsMasterIP", variable
         }
 
         ext.dockerRegistryUrl = project.hasProperty("dockerRegistryUrl") ? project.dockerRegistryUrl : ""
@@ -974,6 +989,7 @@ project('test:system') {
         maxParallelForks = 1
         systemProperty "dockerImageRegistry", "${dockerRegistryUrl}"
         systemProperty "logLevel", System.getProperty("log.level", "DEBUG")
+        systemProperty "tlsEnabled", System.getProperty("tlsEnabled")
 
     }
 
