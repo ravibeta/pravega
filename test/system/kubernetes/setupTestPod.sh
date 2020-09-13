@@ -61,7 +61,7 @@ if [ "$(printf '%s\n' "$minHelmVersion" "$helmVersion=" | sort -V | head -n1)" =
     echo "Valid version of helm present."
 else
     echo "Older version of helm present, please upgrade"
-    exit 1
+    # exit 1
 fi
 
 # Step 5: Verify if kubectl is able to talk to the Kubernetes cluster.
@@ -81,7 +81,7 @@ zkOpName="$(kubectl get pod | grep "zookeeper-operator" | awk '{print $1}')"
 readyValueZk="$(kubectl get deploy | awk '$1 == "zkop-zookeeper-operator" { print $2 }')"
 if [ "$readyValueZk" != "1/1" ];then
         echo "Zookeeper operator is not running. Please check"
-        exit 1
+        # exit 1
   else
     echo "Zookeeper operator is running $readyValueZk"
   fi
@@ -95,7 +95,7 @@ bkOpName="$(kubectl get pod | grep "bookkeeper-operator" | awk '{print $1}')"
 readyValueBk="$(kubectl get deploy | awk '$1 == "bkop-bookkeeper-operator" { print $2 }')"
 if [ "$readyValueBk" != "1/1" ];then
         echo "Bookkeeper operator is not running. Please check"
-        exit 1
+        # exit 1
   else
     echo "Bookkeeper operator is running $readyValueBk"
   fi
@@ -109,7 +109,7 @@ prOpName="$(kubectl get pod | grep "pravega-operator" | awk '{print $1}')"
 readyValuePr="$(kubectl get deploy | awk '$1 == "prop-pravega-operator" { print $2 }')"
 if [ "$readyValuePr" != "1/1" ];then
         echo "Pravega operator is not running. Please check"
-        exit 1
+        # exit 1
   else
     echo "Pravega operator is running $readyValuePr"
   fi
@@ -119,7 +119,7 @@ if [ $tier2Type = "nfs" ]; then
   tier2Size="$(kubectl get pvc -o jsonpath='{.items[?(@.metadata.name == "pravega-tier2")].status.capacity.storage}')"
   if [ -z "$tier2Size" ];then
         echo "Tier2 PVC pravega-tier2 is not present. Please create it before running the tests."
-        exit 1
+        # exit 1
   else
     echo "Size of Tier2 is $tier2Size"
   fi
