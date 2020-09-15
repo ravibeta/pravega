@@ -70,8 +70,8 @@ public abstract class AbstractService implements Service {
     protected static final String PREFIX = System.getProperty("imagePrefix", "pravega");
     protected static final String TCP = "tcp://";
     protected static final String TLS = "tls://";
-    static final int DEFAULT_CONTROLLER_COUNT = 1;
-    static final int DEFAULT_SEGMENTSTORE_COUNT = 5;
+    static final int DEFAULT_CONTROLLER_COUNT = 2;
+    static final int DEFAULT_SEGMENTSTORE_COUNT = 3;
     static final int DEFAULT_BOOKIE_COUNT = 3;
     static final int MIN_READY_SECONDS = 10; // minimum duration the operator is up and running to be considered ready.
     static final int ZKPORT = 2181;
