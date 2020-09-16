@@ -18,7 +18,9 @@ import io.kubernetes.client.openapi.models.V1PodBuilder;
 import io.kubernetes.client.openapi.models.V1SecretVolumeSourceBuilder;
 import io.kubernetes.client.openapi.models.V1ServiceAccount;
 import io.kubernetes.client.openapi.models.V1ServiceAccountBuilder;
+import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeBuilder;
+import io.kubernetes.client.openapi.models.V1VolumeMount;
 import io.kubernetes.client.openapi.models.V1VolumeMountBuilder;
 import io.kubernetes.client.openapi.models.V1beta1ClusterRoleBinding;
 import io.kubernetes.client.openapi.models.V1beta1ClusterRoleBindingBuilder;
@@ -30,6 +32,8 @@ import io.pravega.test.system.framework.TestFrameworkException;
 import io.pravega.test.system.framework.Utils;
 import io.pravega.test.system.framework.kubernetes.ClientFactory;
 import io.pravega.test.system.framework.kubernetes.K8sClient;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -131,15 +135,17 @@ public class K8SequentialExecutor implements TestExecutor {
                 .withRestartPolicy("Never")
                 .endSpec().build();
         if (Utils.TLS_AND_AUTH_ENABLED) {
-            pod  = new V1PodBuilder(pod).editSpec().withVolumes(new V1VolumeBuilder().withName("tls-secret")
+            List<V1VolumeMount> volumeMounts = new ArrayList<>();
+            volumeMounts.add(new V1VolumeMountBuilder().withMountPath(Utils.TLS_MOUNT_PATH).withName("tls-secret").build());
+            volumeMounts.add(new V1VolumeMountBuilder().withMountPath("/data").withName("task-pv-storage").build());
+            List<V1Volume> volumes = new ArrayList<>();
+            volumes.add(new V1VolumeBuilder().withName("task-pv-storage").withPersistentVolumeClaim(new V1PersistentVolumeClaimVolumeSourceBuilder().withClaimName("task-pv-claim").build()).build());
+            volumes.add(new V1VolumeBuilder().withName("tls-secret")
                                                   .withSecret(new V1SecretVolumeSourceBuilder().withSecretName(Utils.TLS_SECRET_NAME).build())
-                                                  .build())
-                                                  .withVolumes(new V1VolumeBuilder().withName("task-pv-storage")
-                                                  .withPersistentVolumeClaim(new V1PersistentVolumeClaimVolumeSourceBuilder().withClaimName("task-pv-claim").build())
-                                                  .build())
+                                                  .build());
+            pod  = new V1PodBuilder(pod).editSpec().withVolumes(volumes)
                 .editContainer(0)
-                .withVolumeMounts(new V1VolumeMountBuilder().withMountPath(Utils.TLS_MOUNT_PATH).withName("tls-secret").build())
-                .withVolumeMounts(new V1VolumeMountBuilder().withMountPath("/data").withName("task-pv-storage").build())
+                .withVolumeMounts(volumeMounts)
                 .endContainer()
                 .endSpec()
                 .build();

@@ -79,7 +79,7 @@ public class PravegaControllerK8sService extends AbstractService {
         String prefix = Utils.TLS_AND_AUTH_ENABLED ? TLS : TCP;
         return Futures.getAndHandleExceptions(k8sClient.getStatusOfPodWithLabel(NAMESPACE, "component", PRAVEGA_CONTROLLER_LABEL)
                                                        .thenApply(statuses -> statuses.stream()
-                                                                                     .flatMap(s -> Stream.of(URI.create(prefix + "pravega-pravega-controller."+NAMESPACE + ":" + CONTROLLER_GRPC_PORT)))
+                                                                                     .flatMap(s -> Stream.of(URI.create(prefix + "pravega-pravega-controller." + NAMESPACE + ":" + CONTROLLER_GRPC_PORT)))
                                                                                      .collect(Collectors.toList())),
                                               t -> new TestFrameworkException(RequestFailed, "Failed to fetch ServiceDetails for pravega-controller", t));
     }
