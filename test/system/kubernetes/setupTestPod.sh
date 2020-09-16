@@ -73,7 +73,7 @@ spec:
 EOF
 
 # Step 6: Create an init pod and wait until pod is running.
-kubectl create -f ./build/resources/test/secret.yaml
+kubectl create -f ./build/resources/test/secret.yaml || true
 
 cat <<EOF | kubectl create -f -
 kind: Pod
