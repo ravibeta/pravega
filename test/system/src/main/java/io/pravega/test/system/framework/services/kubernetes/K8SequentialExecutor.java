@@ -128,6 +128,9 @@ public class K8SequentialExecutor implements TestExecutor {
                 .withCommand("/bin/sh")
                 .withArgs("-c", "java -DexecType=KUBERNETES -DsecurityEnabled=" + Utils.AUTH_ENABLED + " -Dlog.level=" + LOG_LEVEL
                                   + " -DtlsEnabled=" + Utils.TLS_AND_AUTH_ENABLED
+                                  + " -Dgrpc.ssl_target_name_override=pravega-pravega-controller.default"
+                                  + " -Dcom.sun.net.ssl.checkRevocation=false"
+                                  + " -Dgrpc.default_authority=pravega-pravega-controller.default"
                                   + " -cp /data/test-collection.jar io.pravega.test.system.SingleJUnitTestRunner "
                                   + className + "#" + methodName /*+ " > server.log 2>&1 */ + "; exit $?")
                 .withVolumeMounts(new V1VolumeMountBuilder().withMountPath("/data").withName("task-pv-storage").build())
